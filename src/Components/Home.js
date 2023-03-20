@@ -6,7 +6,7 @@ import LeftSide from './LeftSide';
 import MainSide from './MainSide';
 import RightSide from './RightSide';
 
-import { Redirect } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { connect } from 'react-redux';
 
 const Home = (props) => {
@@ -14,7 +14,7 @@ const Home = (props) => {
     <div>
       <Header />
       <Container>
-        {!props.user && <Redirect to="/" />}
+        {!props.user && <Navigate to="/" />}
         <Section>
           <h5>
             <a>Hiring in a hurry? -</a>
