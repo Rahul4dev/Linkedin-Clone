@@ -1,14 +1,56 @@
 /* eslint-disable jsx-a11y/anchor-is-valid */
 import React from 'react';
+import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 
-const MainSide = () => {
+import PostModal from './PostModal';
+import ReactPlayer from 'react-player';
+import { connect } from 'react-redux';
+import { getArticlesAPI } from '../actions';
+
+const MainSide = (props) => {
+  const [showModal, setShowModal] = useState('close');
+
+  useEffect(() => {
+    props.getArticles();
+  }, [props]);
+
+  const handleClick = (e) => {
+    e.preventDefault();
+    if (e.target !== e.currentTarget) {
+      return;
+    }
+
+    switch (showModal) {
+      case 'open':
+        setShowModal('close');
+        break;
+      case 'close':
+        setShowModal('open');
+        break;
+      default:
+        setShowModal('close');
+        break;
+    }
+  };
+
   return (
     <Container>
       <ShareBox>
         <div>
-          <img src="/images/user.svg" alt="" />
-          <button>Start a post</button>
+          {props.user && props.user.photoURL ? (
+            <img src={props.user.photoURL} alt="user" />
+          ) : (
+            <img src="/images/user.svg" alt="user" />
+          )}
+
+          <button
+            onClick={handleClick}
+            disabled={props.loading ? true : false}
+            className="post-space"
+          >
+            Start a post
+          </button>
         </div>
         <div>
           <button>
@@ -29,36 +71,73 @@ const MainSide = () => {
           </button>
         </div>
       </ShareBox>
-      <div>
-        <Article>
-          <SharedActor>
-            <a>
-              <img src="/images/user.svg" alt="user" />
-              <div>
-                <span>Title</span>
-                <span>Info</span>
-                <span>Date</span>
-              </div>
-            </a>
-            <button>
-              <img src="/images/ellipsis.png" alt="dots" />
-            </button>
-          </SharedActor>
-          <Description>Description</Description>
-          <SharedImage>
-            <a>
-              <img src="/images/shared-image.jpg" alt="post" />
-            </a>
-          </SharedImage>
-          <SocialCounts>
-            <li>
-              <button>
-                <img src="/" alt="" />
-              </button>
-            </li>
-          </SocialCounts>
-        </Article>
-      </div>
+      <Content>
+        {props.loading && <img src="./images/spin-loading.gif" alt="loading" />}
+        {props.articles.length !== 0 &&
+          props.articles.map((article, key) => (
+            <Article key={key}>
+              <SharedActor>
+                <a>
+                  <img src={article.actor.image} alt="user" />
+                  <div>
+                    <span>{article.actor.title}</span>
+                    <span>{article.actor.description}</span>
+                    <span>
+                      {article.actor.date.toDate().toLocaleDateString()}
+                    </span>
+                  </div>
+                </a>
+                <button>
+                  <img src="/images/ellipsis.png" alt="dots" />
+                </button>
+              </SharedActor>
+              <Description>{article.description}</Description>
+              <SharedImage>
+                <a>
+                  {!article.sharedImg && article.video ? (
+                    <ReactPlayer width={'100%'} url={article.video} />
+                  ) : (
+                    article.sharedImg && (
+                      <img src={article.sharedImg} alt="img" />
+                    )
+                  )}
+                </a>
+              </SharedImage>
+
+              <SocialCounts>
+                <li>
+                  <button>
+                    <img src="/images/like-icon.svg" alt="like" />
+                    <img src="/images/celebrate-icon.svg" alt="like" />
+                    <span>75</span>
+                  </button>
+                </li>
+                <li>
+                  <a>{article.comments} comments</a>
+                </li>
+              </SocialCounts>
+              <SocialActions>
+                <button>
+                  <img src="/images/like-icon.png" alt="like" />
+                  <span>Like</span>
+                </button>
+                <button>
+                  <img src="/images/comment-icon.png" alt="comment" />
+                  <span>Comments</span>
+                </button>
+                <button>
+                  <img src="/images/share-icon.png" alt="share" />
+                  <span>Share</span>
+                </button>
+                <button>
+                  <img src="/images/send-icon.png" alt="send" />
+                  <span>Send</span>
+                </button>
+              </SocialActions>
+            </Article>
+          ))}
+      </Content>
+      <PostModal showModal={showModal} handleClick={handleClick} />
     </Container>
   );
 };
@@ -96,7 +175,19 @@ const ShareBox = styled(CommonCard)`
       display: flex;
       align-items: center;
       font-weight: 600;
+
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.07);
+        border-radius: 6px;
+      }
     }
+    .post-space {
+      box-shadow: 1px 1px 2px 1px rgba(159, 156, 156, 0.75);
+    }
+    .post-icon {
+      width: 27px;
+    }
+
     &:first-child {
       display: flex;
       align-items: center;
@@ -219,6 +310,71 @@ const SharedImage = styled.div`
   }
 `;
 
-const SocialCounts = styled.div``;
+const SocialCounts = styled.ul`
+  line-height: 1.3;
+  display: flex;
+  align-items: flex-start;
+  overflow: auto;
+  margin: 0 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e9e5df;
+  list-style: none;
 
-export default MainSide;
+  li {
+    margin-right: 5px;
+    font-size: 12px;
+    button {
+      display: flex;
+    }
+  }
+`;
+
+const SocialActions = styled.div`
+  align-items: center;
+  display: flex;
+  justify-content: flex-start;
+  margin: 0;
+  min-height: 40px;
+  padding: 4px 8px;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px;
+    color: #0a66c2;
+    width: auto;
+    height: 48px;
+
+    img {
+      width: 100%;
+      height: 100%;
+    }
+
+    @media (min-width: 767px) {
+      span {
+        margin-left: 8px;
+      }
+    }
+  }
+`;
+
+const Content = styled.div`
+  text-align: center;
+  & > img {
+    width: 30px;
+  }
+`;
+
+const mapStateToProps = (state) => {
+  return {
+    loading: state.articleState.loading,
+    user: state.userState.user,
+    articles: state.articleState.articles,
+  };
+};
+
+const mapDispatchToProps = (dispatch) => ({
+  getArticles: () => dispatch(getArticlesAPI()),
+});
+
+export default connect(mapStateToProps, mapDispatchToProps)(MainSide);
